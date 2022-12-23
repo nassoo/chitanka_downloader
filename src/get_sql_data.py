@@ -5,7 +5,7 @@ class GetDatabaseData(ConnectDatabase):
 
     def __init__(self):
         super().__init__()
-        self.cur = self.connect_db()
+        self.cur = None
 
     def get_books(self):
         sql_books = "SELECT \

@@ -1,22 +1,23 @@
+# from __future__ import unicode_literals
+import json
 from src.get_sql_data import GetDatabaseData
-from src.series_resolve import ResolveSeries
 from src.resolve_authors import ResolveAuthors
+from src.series_resolve import ResolveSeries
 
 
-class GetBooks(GetDatabaseData):
+class GetContent(GetDatabaseData):
 
     def __init__(self):
         super().__init__()
-        self.urls = []
-        self.books = self.get_books()
-        self.texts = self.get_texts()
-        self.chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
+        # self.books = []  # self.get_books()
+        # self.texts = []  # self.get_texts()
         self.book_series_ids = {}
+        self.__chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
+        self.urls = {}  # self.get_urls()
 
-    def urls_list(self):
+    def get_content(self):
 
-        for book in self.books:
-            s_info = None
+        for book in self.get_books():
             series = None
             series_num = None
             book_id, slug, book_authors, book_title, \
@@ -57,12 +58,12 @@ class GetBooks(GetDatabaseData):
                 curr_book_path += full_title[:97]
             else:
                 curr_book_path += full_title
-            for key, value in self.chars_to_replace.items():
+            for key, value in self.__chars_to_replace.items():
                 curr_book_path = curr_book_path.replace(key, value)
             date = int(date.replace(' ', '').replace(':', '').replace('-', ''))
-            self.urls.append(['book/' + str(book_id), lang, slug, curr_book_path, date])
+            self.urls['book/' + str(book_id)] = [lang, slug, curr_book_path, date]
 
-        for text in self.texts:
+        for text in self.get_texts():
             text_id, slug, text_authors, text_title, text_subtitle, ser_name, ser_num, date, lang = text
             curr_text_path = '/'
             if lang == 'bg':
@@ -91,11 +92,11 @@ class GetBooks(GetDatabaseData):
                 curr_text_path += full_title[:97] + '…'
             else:
                 curr_text_path += full_title
-            for key, value in self.chars_to_replace.items():
+            for key, value in self.__chars_to_replace.items():
                 curr_text_path = curr_text_path.replace(key, value)
             date = date.replace(' ', '').replace(':', '').replace('-', '')
-            self.urls.append(['text', str(text_id), lang, slug, curr_text_path, date])
+            self.urls['text/' + str(text_id)] = [lang, slug, curr_text_path, date]
 
-        with open("./output/test_texts-output.txt", "w", encoding='UTF8') as output:
-            for row in self.urls:
-                output.write(str(row) + '\n')
+        with open("./output/test_texts-output.json", "w", encoding='utf-8') as f:
+            json.dump(self.urls, f, ensure_ascii=False, indent=4)
+
