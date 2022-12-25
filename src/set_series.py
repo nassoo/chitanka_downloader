@@ -18,10 +18,10 @@ class SetSeries(DownloadFiles):
     @long_running
     def set_series(self):
         for book_id in self.book_series_ids.keys():
-            if book_id in self.new_urls.keys():
+            if book_id in self.urls_to_download.keys():
                 self.download_progress += 1
-                input_file = os.path.join(self.output_dir, self.new_urls[book_id][2] + '.fb2.zip')
-                output_file = os.path.join(self.output_dir, self.new_urls[book_id][2] + '.xml')
+                input_file = os.path.join(self.output_dir, self.urls_to_download[book_id][2] + '.fb2.zip')
+                output_file = os.path.join(self.output_dir, self.urls_to_download[book_id][2] + '.xml')
                 print(input_file)
                 with zipfile.ZipFile(input_file, 'r') as zf:
                     zip_file = zf.namelist()[0]

@@ -105,7 +105,7 @@ class UserInterface(SetSeries):
 
         files_dir_btn = tk.Button(self.frame_params, text="Директория", width=14, command=self.select_files_dir)
         files_dir_btn.grid(row=0, column=0, sticky=tk.NW, padx=10, pady=10)
-        self.files_dir_output_text.set("(изберете директорията, в която да бъде изтеглено съдържанието)")
+        self.files_dir_output_text.set("Изберете директорията, в която да бъде изтеглено съдържанието")
         files_dir_output = tk.Label(self.frame_params, textvariable=self.files_dir_output_text, bg="black", fg="white",
                                     font="none 12")
         files_dir_output.grid(row=0, column=2, sticky=tk.W)
@@ -162,6 +162,7 @@ class UserInterface(SetSeries):
                 el.destroy()
 
     def end_program(self):
+        self.save_urls()
         self.window.destroy()
         exit()
 
@@ -187,21 +188,20 @@ class UserInterface(SetSeries):
                                  lambda e: self.ft_warning.config(wraplength=self.window.winfo_width() - 150))
             self.ft_warning_btn = tk.Label(self.frame_params, text="?")
             self.ft_warning_btn.grid(row=2, column=0, sticky=tk.E, padx=10, pady=10)
-            ft_warning_tip = Hovertip(self.ft_warning_btn,
-                                      "В базата данни на chitanka.info информацията за поредиците \n"
-                                      "е налична само за произведенията, но не и за книгите. \n"
-                                      "Ако желаете да импортирате поредиците и номерата им в книгите, \n"
-                                      "трябва да изберете формат .fb2.zip. \n"
-                                      "Това не засяга имената на файловете, \n"
-                                      "а единствено метаданните вътре във файловете, \n"
-                                      "за да могат програмите за четене на книги да ги разпознават. \n"
-                                      "Поредиците и номерата им ще бъдат отразени в имената на файловете, \n"
-                                      "независимо от файловия формат.", 0)
+            Hovertip(self.ft_warning_btn,
+                     "В базата данни на chitanka.info информацията за поредиците \n"
+                     "е налична само за произведенията, но не и за книгите. \n"
+                     "Ако желаете да импортирате поредиците и номерата им в книгите, \n"
+                     "трябва да изберете формат .fb2.zip. \n"
+                     "Това не засяга имената на файловете, \n"
+                     "а единствено метаданните вътре във файловете, \n"
+                     "за да могат програмите за четене на книги да ги разпознават. \n"
+                     "Поредиците и номерата им ще бъдат отразени в имената на файловете, \n"
+                     "независимо от файловия формат.", 0)
 
     def set_filenames(self, value):
         self.filenames = value
         self.filenames_output_text.set(f"Имената на файловете ще са на {value}.")
-
 
     def download_content(self):
         # TODO: error handling if server is down
@@ -218,6 +218,7 @@ class UserInterface(SetSeries):
             self.td.start()
 
             self.progress_label_text.set("Файловете се изтеглят. Процесът е бавен - моля, изчакайте!")
+            # TODO: add description of the process
             self.process_finished_text.set(f"Изтеглянето приключи!")
             self.window.after(100, self.update_progress)
 
@@ -231,7 +232,7 @@ class UserInterface(SetSeries):
         progress_label.grid(row=3, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
         progress_label.place(anchor=tk.CENTER, relx=0.5, rely=0.4)
         if self.td.is_alive() or self.ts.is_alive():
-            self.progress_value.set(str(round(self.download_progress / len(self.new_urls) * 100, 2)))
+            self.progress_value.set(str(round(self.download_progress / len(self.urls_to_download) * 100, 2)))
             s = ttk.Style()
             s.layout("LabeledProgressbar",
                      [('LabeledProgressbar.trough',
@@ -283,6 +284,5 @@ class UserInterface(SetSeries):
 
         self.progress_label_text.set("Поредиците се вмъкват във файловете, в които е необходимо.\n"
                                      "Процесът е бавен - моля, изчакайте!")
-        self.progress_all = len(self.new_urls)
         self.process_finished_text.set(f"Процесът приключи! Можете да затворите програмата.")
         self.window.after(100, self.update_progress)

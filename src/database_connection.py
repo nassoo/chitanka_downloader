@@ -19,6 +19,6 @@ class ConnectDatabase(GetDirectory):
         except sqlite3.OperationalError as e:
             print(f"Error connecting to DB: {e}")
             # sys.exit(1)
-            return None, f"Неуспешно свързване с базата данни: {e}.\n" \
-                         f"Проверете дали сте въвели правилната директория!\n" \
-                         f"и опитайте отново."
+            return None, f"Неуспешно свързване с базата данни: {e}. \n" \
+                         f"Проверете дали сте въвели правилната директория \n" \
+                         f"и опитайте отново!"
