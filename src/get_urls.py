@@ -1,5 +1,4 @@
-# from __future__ import unicode_literals
-import json
+from helpers.convert_filenames import convert_cyr_to_lat
 from src.get_sql_data import GetDatabaseData
 from src.resolve_authors import ResolveAuthors
 from src.series_resolve import ResolveSeries
@@ -9,13 +8,15 @@ class GetContent(GetDatabaseData):
 
     def __init__(self):
         super().__init__()
-        # self.books = []  # self.get_books()
-        # self.texts = []  # self.get_texts()
+        self.filenames = 'кирилица'
         self.book_series_ids = {}
         self.__chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
-        self.urls = {}  # self.get_urls()
+        self.urls = {}
+        self.orig_author_names = {}
 
     def get_content(self):
+        self.orig_author_names = self._get_orig_author_names()
+
 
         for book in self.get_books():
             series = None
@@ -27,19 +28,15 @@ class GetContent(GetDatabaseData):
                 if not type(s_info[0]) == list:
                     s_info = [s_info]
                 series, series_num = ResolveSeries(book_authors, ser_num, s_info).check_series()
+            curr_book_path = self.curr_path(lang)
+            if self.filenames == 'латиница' and book_authors and book_authors != '':
+                book_authors = self.get_orig_author(book_authors)
             authors, book_authors = ResolveAuthors(book_authors).clear_authors()
-            curr_book_path = '/'
-            if lang == 'bg':
-                curr_book_path += 'Български/'
-            elif lang == 'en':
-                curr_book_path += 'Английски/'
-            else:
-                curr_book_path += 'Други/'
             curr_book_path += authors[0] + '/'
             if not authors == '_':
                 curr_book_path += authors + '/'
             if series:
-                curr_book_path += series + '/'
+                curr_book_path += series[:-3] + '/' if series.endswith('...') else series + '/'
                 book_key = 'book/' + str(book_id)
                 self.book_series_ids[book_key] = [series, series_num]
             if not authors == '_':
@@ -61,17 +58,15 @@ class GetContent(GetDatabaseData):
             for key, value in self.__chars_to_replace.items():
                 curr_book_path = curr_book_path.replace(key, value)
             date = int(date.replace(' ', '').replace(':', '').replace('-', ''))
+            if self.filenames == 'латиница':
+                curr_book_path = convert_cyr_to_lat(curr_book_path)
             self.urls['book/' + str(book_id)] = [lang, slug, curr_book_path, date]
 
         for text in self.get_texts():
             text_id, slug, text_authors, text_title, text_subtitle, ser_name, ser_num, date, lang = text
-            curr_text_path = '/'
-            if lang == 'bg':
-                curr_text_path += 'Български/'
-            elif lang == 'en':
-                curr_text_path += 'Английски/'
-            else:
-                curr_text_path += 'Други/'
+            curr_text_path = self.curr_path(lang)
+            if self.filenames == 'латиница' and text_authors and text_authors != '':
+                text_authors = self.get_orig_author(text_authors)
             authors, text_authors = ResolveAuthors(text_authors).clear_authors()
             curr_text_path += authors[0] + '/'
             if not authors == '_':
@@ -95,8 +90,24 @@ class GetContent(GetDatabaseData):
             for key, value in self.__chars_to_replace.items():
                 curr_text_path = curr_text_path.replace(key, value)
             date = date.replace(' ', '').replace(':', '').replace('-', '')
+            if self.filenames == 'латиница':
+                curr_text_path = convert_cyr_to_lat(curr_text_path)
             self.urls['text/' + str(text_id)] = [lang, slug, curr_text_path, date]
 
-        with open("./output/test_texts-output.json", "w", encoding='utf-8') as f:
-            json.dump(self.urls, f, ensure_ascii=False, indent=4)
+    def curr_path(self, lang):
+        curr_path = ''
+        if lang == 'bg':
+            curr_path += 'Български/' if self.filenames == 'кирилица' else 'Bulgarian/'
+        elif lang == 'en':
+            curr_path += 'Английски/' if self.filenames == 'кирилица' else 'English/'
+        else:
+            curr_path += 'Други/' if self.filenames == 'кирилица' else 'Other/'
+        return curr_path
 
+    def get_orig_author(self, authors):
+        authors_temp_list = []
+        for author in authors.split(', '):
+            author = author.strip()
+            author_orig = self.orig_author_names[author] if author in self.orig_author_names else author
+            authors_temp_list.append(author_orig)
+        return ', '.join(authors_temp_list)

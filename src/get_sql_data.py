@@ -1,4 +1,5 @@
 from src.database_connection import ConnectDatabase
+import re
 
 
 class GetDatabaseData(ConnectDatabase):
@@ -44,3 +45,15 @@ class GetDatabaseData(ConnectDatabase):
             ORDER BY tid "
         self.cur.execute(sql_text_book)
         return self.cur.fetchall()
+
+    def _get_orig_author_names(self):
+        names = {}
+        sql_orig_author_names = f"SELECT person.name AS person_name, person.orig_name as orig_name " \
+                            f"FROM person " \
+                            f"WHERE person.orig_name IS NOT NULL "
+        self.cur.execute(sql_orig_author_names)
+        orig_author_names = self.cur.fetchall()
+        for t in orig_author_names:
+            if t and t[1] and re.search(r'([a-zA-Z]+)', t[1]):
+                names[t[0]] = t[1]
+        return names
