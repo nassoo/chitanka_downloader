@@ -14,14 +14,15 @@ class DownloadFiles(GetContent):
     def __init__(self):
         super().__init__()
         self.urls_to_download = {}
-        self.user_urls = json.load(open(resoure_path('user_data/user_files.json'), 'r', encoding='utf-8'))
-        self.output_dir = "d:/Читанка"  # self.get_directory()
+        self.user_urls = json.load(open('user_data/user_files.json', 'r', encoding='utf-8'))
+        self.output_dir = "../Читанка" if self.filenames == 'кирилица' else 'Chitanka'  # self.get_directory()
         self.file_type = '.fb2.zip'
         self.download_progress = 0
         self.update = True
 
     @long_running
     def download(self):
+        headers = {'User-Agent': 'PostmanRuntime/7.29.0'}
         try:
             for key in self.urls_to_download.keys():
                 self.download_progress += 1
@@ -31,20 +32,22 @@ class DownloadFiles(GetContent):
                 file_name = path.split('/')[-1] + self.file_type
                 if not os.path.exists(dir_name):
                     os.makedirs(dir_name)
-                r = requests.get(url)
-                url_fixed = r.url.replace('book/%5C', '')
-                r_fixed = requests.get(url_fixed)
+                try:
+                    head = requests.head(url).headers['Location']
+                    r = requests.get(IP + head)
+                except requests.exceptions.MissingSchema:
+                    r = requests.get(url, headers=headers, stream=True)
+                    url_fixed = r.url.replace('book/%5C', '').replace('text/%5C', '')
+                    r = requests.get(url_fixed)
 
                 with open(os.path.join(dir_name, file_name), 'wb') as f:
-                    f.write(r_fixed.content)
+                    f.write(r.content)
 
                 if self.update and self.urls_to_download[key][2] != self.urls[key][2]:
                     os.remove(os.path.join(self.output_dir, self.urls[key][2] + self.file_type))
 
                 self.user_urls[key] = self.urls_to_download[key]
         except Exception as e:
-            # logger = logging.getLogger(__name__)
-            # logger.error(e)
             logging.exception(e)
         self.save_urls()
 

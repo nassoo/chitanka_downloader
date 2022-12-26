@@ -32,8 +32,8 @@ class UserInterface(SetSeries):
         self.progress_value = tk.StringVar()
         self.progress_label_text = tk.StringVar()
         self.process_finished_text = tk.StringVar()
-        self.td = Thread(target=self.download, daemon=True)
-        self.ts = Thread(target=self.set_series, daemon=True)
+        self.t = Thread()
+        self.ts = Thread(target=self.set_series)
 
     def run_main_window(self):
 
@@ -105,7 +105,7 @@ class UserInterface(SetSeries):
 
         files_dir_btn = tk.Button(self.frame_params, text="Директория", width=14, command=self.select_files_dir)
         files_dir_btn.grid(row=0, column=0, sticky=tk.NW, padx=10, pady=10)
-        self.files_dir_output_text.set("Изберете директорията, в която да бъде изтеглено съдържанието")
+        self.files_dir_output_text.set("Файловете ще се изтеглят в " + os.path.abspath(self.output_dir))
         files_dir_output = tk.Label(self.frame_params, textvariable=self.files_dir_output_text, bg="black", fg="white",
                                     font="none 12")
         files_dir_output.grid(row=0, column=2, sticky=tk.W)
@@ -215,14 +215,17 @@ class UserInterface(SetSeries):
             self.get_content()
             self.get_new_urls()
 
-            self.td.start()
+            self.t = Thread(target=self.download)
+            self.t.daemon = True
+            self.t.start()
 
             self.progress_label_text.set("Файловете се изтеглят. Процесът е бавен - моля, изчакайте!")
             # TODO: add description of the process
             self.process_finished_text.set(f"Изтеглянето приключи!")
-            self.window.after(100, self.update_progress)
+            self.progress_bar()
 
-    def update_progress(self):
+    def progress_bar(self):
+
         progress_label = tk.Label(self.window,
                                   textvariable=self.progress_label_text,
                                   bg="black",
@@ -231,33 +234,38 @@ class UserInterface(SetSeries):
                                   name="progress_label")
         progress_label.grid(row=3, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
         progress_label.place(anchor=tk.CENTER, relx=0.5, rely=0.4)
-        if self.td.is_alive() or self.ts.is_alive():
-            self.progress_value.set(str(round(self.download_progress / len(self.urls_to_download) * 100, 2)))
-            s = ttk.Style()
-            s.layout("LabeledProgressbar",
-                     [('LabeledProgressbar.trough',
-                       {'children': [('LabeledProgressbar.pbar',
-                                      {'side': 'left', 'sticky': 'ns'}),
-                                     ("LabeledProgressbar.label",  # label inside the bar
-                                      {"sticky": ""})],
-                        'sticky': 'nswe'})])
-            s.configure("LabeledProgressbar", text=f"{self.progress_value.get()} %      ")
-            p = ttk.Progressbar(self.window, orient="horizontal", length=400, mode='determinate',
-                                style="LabeledProgressbar")
-            p.daemon = True
-            p.grid(row=2, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-            p.place(anchor=tk.CENTER, relx=0.5, rely=0.3)
-            p['value'] = float(self.progress_value.get())
-            self.window.update()
-            p.after(100, self.update_progress)
-        else:
-            self.window.nametowidget('progress_label').destroy()
-            process_finished = tk.Label(self.window, textvariable=self.process_finished_text, bg="black", fg="green",
-                                        font="none 12 bold", name="process_finished")
-            process_finished.grid(row=5, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-            process_finished.place(anchor=tk.CENTER, relx=0.5, rely=0.4)
-            if self.file_type == ".fb2.zip" and self.process_finished_text.get() == "Изтеглянето приключи!":
-                self.series()
+        self.progress_value.set(str(round(self.download_progress / len(self.urls_to_download) * 100, 2)))
+        s = ttk.Style()
+        s.layout("LabeledProgressbar",
+                 [('LabeledProgressbar.trough',
+                   {'children': [('LabeledProgressbar.pbar',
+                                  {'side': 'left', 'sticky': 'ns'}),
+                                 ("LabeledProgressbar.label",  # label inside the bar
+                                  {"sticky": ""})],
+                    'sticky': 'nswe'})])
+        s.configure("LabeledProgressbar", text=f"{self.progress_value.get()} %      ")
+        p = ttk.Progressbar(self.window, orient="horizontal", length=400, mode='determinate',
+                            style="LabeledProgressbar", name="progress_bar")
+        p.daemon = True
+        p.grid(row=2, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
+        p.place(anchor=tk.CENTER, relx=0.5, rely=0.3)
+
+        def update_progress_bar():
+            if self.t.is_alive():
+                self.progress_value.set(str(round(self.download_progress / len(self.urls_to_download) * 100, 2)))
+                s.configure("LabeledProgressbar", text=f"{self.progress_value.get()} %      ")
+                p.after(5000, update_progress_bar)
+            else:
+                self.window.nametowidget('progress_label').destroy()
+                process_finished = tk.Label(self.window, textvariable=self.process_finished_text, bg="black",
+                                            fg="green",
+                                            font="none 12 bold", name="process_finished")
+                process_finished.grid(row=5, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
+                process_finished.place(anchor=tk.CENTER, relx=0.5, rely=0.4)
+                if self.file_type == ".fb2.zip" and self.process_finished_text.get() == "Изтеглянето приключи!":
+                    self.series()
+
+        self.window.after(100, update_progress_bar)
 
     def series(self):
         # TODO: run the process without downloading the files again
@@ -280,9 +288,11 @@ class UserInterface(SetSeries):
         self.set_series()
         self.download_progress = 0
 
-        self.ts.start()
+        self.t = Thread(target=self.set_series)
+        self.t.daemon = True
+        self.t.start()
 
         self.progress_label_text.set("Поредиците се вмъкват във файловете, в които е необходимо.\n"
                                      "Процесът е бавен - моля, изчакайте!")
         self.process_finished_text.set(f"Процесът приключи! Можете да затворите програмата.")
-        self.window.after(100, self.update_progress)
+        self.progress_bar()

@@ -4,7 +4,11 @@ from src.main_window import UserInterface
 
 
 def main():
-    logging.basicConfig(filename='user_data/output.log', level=logging.DEBUG,
+    logging.basicConfig(level=logging.DEBUG,
+                        handlers=[
+                            logging.FileHandler("user_data/output.log", mode='w'),
+                            logging.StreamHandler()
+                        ],
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
     mw = UserInterface()
