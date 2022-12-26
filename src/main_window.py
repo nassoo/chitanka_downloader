@@ -254,6 +254,7 @@ class UserInterface(SetSeries):
             if self.t.is_alive():
                 self.progress_value.set(str(round(self.download_progress / len(self.urls_to_download) * 100, 2)))
                 s.configure("LabeledProgressbar", text=f"{self.progress_value.get()} %      ")
+                p["value"] = self.progress_value.get()
                 p.after(5000, update_progress_bar)
             else:
                 self.window.nametowidget('progress_label').destroy()
