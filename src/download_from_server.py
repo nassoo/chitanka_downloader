@@ -4,22 +4,23 @@ import requests
 import json
 import logging
 
-from helpers.powermanagement import long_running
-from src.get_urls import GetContent
+from utilities.powermanagement import long_running
 
 IP = 'http://127.0.0.1:8000/'
 
 
-class DownloadFiles(GetContent):
-    def __init__(self):
-        super().__init__()
+class DownloadFiles:
+    def __init__(self, output_dir, file_type, update=True, urls=None):
+        if urls is None:
+            urls = {}
+        self.urls = urls
         self.urls_to_download = {}
         self.user_urls = json.load(open('user_data/user_files.json', 'r', encoding='utf-8'))
         self.user_series = json.load(open('user_data/user_series.json', 'r', encoding='utf-8'))
-        self.output_dir = "../Читанка" if self.filenames == 'кирилица' else 'Chitanka'  # self.get_directory()
-        self.file_type = '.fb2.zip'
+        self.output_dir = output_dir
+        self.file_type = file_type
         self.download_progress = 0
-        self.update = True
+        self.update = update
 
     @long_running
     def download(self):
@@ -47,18 +48,9 @@ class DownloadFiles(GetContent):
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form localhost with link to .sfb.zip]',
                                           exc_info=False)
                     except KeyError as e:
-                        # TODO: add ?please
                         url = 'https://chitanka.info/' + key + '-' + short_name + self.file_type
                         r = requests.get(url)
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form chitanka.info]', exc_info=False)
-                # try:
-                #     head = requests.head(url).headers['Location']
-                #     r = requests.get(IP + head)
-                # except requests.exceptions.MissingSchema as e:
-                #     r = requests.get(url)
-                #     url_fixed = r.url.replace('book/%5C', '').replace('text/%5C', '')
-                #     r = requests.get(url_fixed)
-                #     logging.exception(f'{e}\n    {key}: {url} [SUCCESS form localhost]', exc_info=False)
 
                 with open(os.path.join(dir_name, file_name), 'wb') as f:
                     f.write(r.content)

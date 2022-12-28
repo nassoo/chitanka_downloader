@@ -1,4 +1,4 @@
-from helpers.convert_filenames import convert_cyr_to_lat
+from utilities.convert_filenames import convert_cyr_to_lat
 from src.get_sql_data import GetDatabaseData
 from src.resolve_authors import ResolveAuthors
 from src.series_resolve import ResolveSeries
@@ -6,16 +6,16 @@ from src.series_resolve import ResolveSeries
 
 class GetContent(GetDatabaseData):
 
-    def __init__(self):
-        super().__init__()
-        self.filenames = 'кирилица'
+    def __init__(self, filenames, cur):
+        super().__init__(cur)
+        self.filenames = filenames
         self.book_series_ids = {}
         self.__chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
         self.urls = {}
         self.orig_author_names = {}
 
     def get_content(self):
-        self.orig_author_names = self._get_orig_author_names()
+        self.orig_author_names = self.get_orig_author_names()
 
         for book in self.get_books():
             series = None

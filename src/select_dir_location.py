@@ -1,15 +1,10 @@
-from abc import ABC, abstractmethod
-# import tkinter as tk
 from tkinter import filedialog
 
 
-class GetDirectory(ABC):
+class GetDirectory:
 
-    def __init__(self):
-        self.root = None  # tk.Tk()
-
-    @abstractmethod
-    def get_directory(self):
-        self.root.withdraw()
-        self.root.directory = filedialog.askdirectory()
-        return self.root.directory
+    @staticmethod
+    def get_directory():
+        # self.root.withdraw()
+        directory = filedialog.askdirectory()
+        return directory

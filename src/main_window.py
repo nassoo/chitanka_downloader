@@ -8,15 +8,21 @@ from sys import exit
 import os
 import importlib.util
 
-from helpers.path_handler import resoure_path
-from helpers.tkHyperlinkManager import HyperlinkManager
+from utilities.path_handler import resource_path
+from utilities.tkHyperlinkManager import HyperlinkManager
+from src.database_connection import ConnectDatabase
+from src.download_from_server import DownloadFiles
+from src.get_urls import GetContent
+from src.select_dir_location import GetDirectory
 from src.set_series import SetSeries
 
 
-class UserInterface(SetSeries):
+class UserInterface:
 
     def __init__(self):
-        super().__init__()
+        self.filenames = 'кирилица'
+        self.file_type = '.fb2.zip'
+        self.output_dir = "../Читанка" if self.filenames == 'кирилица' else 'Chitanka'
         self.window = tk.Tk()
         self.frame_params = None
         self.db_output_text = tk.StringVar()
@@ -33,6 +39,8 @@ class UserInterface(SetSeries):
         self.error_message = None
         self.t = Thread()
 
+        self.df = DownloadFiles(output_dir=self.output_dir, file_type=self.file_type)
+
     def run_main_window(self):
 
         if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
@@ -48,7 +56,7 @@ class UserInterface(SetSeries):
         frame_logo.grid(row=0, column=0, columnspan=4, sticky='nsew')
         self.window.grid_columnconfigure(0, weight=1)
 
-        logo_file = tk.PhotoImage(file=resoure_path("img/logo.png"))
+        logo_file = tk.PhotoImage(file=resource_path("img/logo.png"))
         self.window.wm_iconphoto(False, logo_file)
         logo = tk.Label(frame_logo, image=logo_file, bg="black")
         logo.grid(row=0, column=0, columnspan=4, sticky="ew", padx=10, pady=10)
@@ -86,7 +94,7 @@ class UserInterface(SetSeries):
         db_output.grid(row=4, column=0, columnspan=4, sticky=tk.W)
         db_output.place(anchor=tk.CENTER, relx=0.5, rely=0.66)
 
-    def params_screen(self):
+    def params_screen(self, cur):
         self.clear_screen()
         db_txt = tk.Label(self.window, text="Базата данни е заредена успешно!",
                           bg="black", fg="green", font="none 12 bold")
@@ -103,6 +111,7 @@ class UserInterface(SetSeries):
 
         files_dir_btn = tk.Button(self.frame_params, text="Директория", width=14, command=self.select_files_dir)
         files_dir_btn.grid(row=0, column=0, sticky=tk.NW, padx=10, pady=10)
+        self.files_dir_output_text = tk.StringVar()
         self.files_dir_output_text.set("Файловете ще се изтеглят в " + os.path.abspath(self.output_dir))
         files_dir_output = tk.Label(self.frame_params, textvariable=self.files_dir_output_text, bg="black", fg="white",
                                     font="none 12")
@@ -130,27 +139,21 @@ class UserInterface(SetSeries):
         fn_output.grid(row=3, column=2, sticky=tk.W)
         fn_output.bind('<Configure>', lambda e: fn_output.config(wraplength=self.window.winfo_width() - 150))
 
-        download_btn = tk.Button(self.window, text="Изтегли всичко", width=14, command=self.download_all)
+        download_btn = tk.Button(self.window, text="Изтегли всичко", width=14,
+                                 command=lambda: self.download_content(False, cur))
         download_btn.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
         download_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.75)
 
-        update_btn = tk.Button(self.window, text="Само обнови", width=14, command=self.update_content)
+        update_btn = tk.Button(self.window, text="Само обнови", width=14,
+                               command=lambda: self.download_content(True, cur))
         update_btn.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
         update_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.85)
 
-    def download_all(self):
-        self.update = False
-        self.download_content()
-
-    def update_content(self):
-        self.update = True
-        self.download_content()
-
     def connect_database(self):
-        self.root = tk.Tk()
-        self.cur, database_message = self.connect_db()
-        if self.cur is not None:
-            self.params_screen()
+        db = ConnectDatabase()
+        cur, database_message = db.connect_db()
+        if cur is not None:
+            self.params_screen(cur)
         else:
             self.db_output_text.set(database_message)
 
@@ -160,13 +163,15 @@ class UserInterface(SetSeries):
                 el.destroy()
 
     def end_program(self):
-        self.save_urls()
+        # TODO: save series too (check which process is running)
+        self.df.save_urls()
         self.window.destroy()
         exit()
 
     def select_files_dir(self):
-        self.root = tk.Tk()
-        self.output_dir = self.get_directory()
+        gd = GetDirectory()
+        self.output_dir = gd.get_directory()
+        self.window.update_idletasks()
         self.files_dir_output_text.set(self.output_dir)
 
     def set_file_type(self, value):
@@ -201,7 +206,7 @@ class UserInterface(SetSeries):
         self.filenames = value
         self.filenames_output_text.set(f"Имената на файловете ще са на {value}.")
 
-    def download_content(self):
+    def download_content(self, update, cur):
         # TODO: error handling if server is down
         if self.output_dir is None:
             self.error_message = tk.Label(self.window, text="Не сте избрали папка за изтегляне!", bg="black", fg="red",
@@ -210,19 +215,23 @@ class UserInterface(SetSeries):
             self.error_message.place(anchor=tk.CENTER, relx=0.5, rely=0.7)
         else:
             self.clear_screen()
-            self.get_content()
-            self.get_new_urls()
+            gc = GetContent(filenames=self.filenames, cur=cur)
+            gc.get_content()
+            self.df.update = update
+            self.df.urls = gc.urls
+            self.df.get_new_urls()
 
-            self.t = Thread(target=self.download)
+            self.t = Thread(target=self.df.download)
             self.t.daemon = True
             self.t.start()
 
             self.progress_label_text.set("Файловете се изтеглят. Процесът е бавен - моля, изчакайте!")
             # TODO: add description of the process
             self.process_finished_text.set(f"Изтеглянето приключи!")
-            self.progress_bar(len(self.urls_to_download))
+            self.progress_bar(self.df)
 
-    def progress_bar(self, all_files):
+    def progress_bar(self, process):
+        all_files = len(process.urls_to_download)
         progress_label = tk.Label(self.window,
                                   textvariable=self.progress_label_text,
                                   bg="black",
@@ -249,11 +258,10 @@ class UserInterface(SetSeries):
         p.place(anchor=tk.CENTER, relx=0.5, rely=0.3)
 
         def update_progress_bar():
-            # TOFIX: progress bar is not updating for series
-            # TO_FIX: progress bar is not updating for series
+            # FIXME: progress bar is not updating
             if self.t.is_alive():
                 if all_files > 0:
-                    progress_value.set(str(round(self.download_progress / all_files * 100, 2)))
+                    progress_value.set(str(round(process.download_progress / all_files * 100, 2)))
                 s.configure("LabeledProgressbar", text=f"{progress_value.get()} %      ")
                 p["value"] = progress_value.get()
                 p.after(5000, update_progress_bar)
@@ -290,15 +298,16 @@ class UserInterface(SetSeries):
 
     def insert_series(self):
         self.clear_screen()
-        self.get_new_series()
-        self.download_progress = 0
+        ss = SetSeries()
+        ss.get_new_series()
+        ss.download_progress = 0
 
         # TODO: add an option insert all series or update only the missing ones
-        self.t = Thread(target=self.set_series)
+        self.t = Thread(target=ss.set_series)
         self.t.daemon = True
         self.t.start()
 
         self.progress_label_text.set("Поредиците се вмъкват във файловете, в които е необходимо.\n"
                                      "Процесът е бавен - моля, изчакайте!")
         self.process_finished_text.set(f"Процесът приключи! Можете да затворите програмата.")
-        self.progress_bar(len(self.series_to_insert))
+        self.progress_bar(ss)

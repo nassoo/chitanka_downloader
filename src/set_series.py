@@ -7,13 +7,13 @@ import json
 import logging
 import urllib.parse
 
-from helpers.powermanagement import long_running
+from utilities.powermanagement import long_running
 from src.download_from_server import DownloadFiles
 
 
 class SetSeries(DownloadFiles):
     def __init__(self):
-        super().__init__()
+        super().__init__(self)
         self.series_to_insert = {}
         self.download_progress = 0
 

@@ -2,11 +2,10 @@ from src.database_connection import ConnectDatabase
 import re
 
 
-class GetDatabaseData(ConnectDatabase):
+class GetDatabaseData:
 
-    def __init__(self):
-        super().__init__()
-        self.cur = None
+    def __init__(self, cur):
+        self.cur = cur
 
     def get_books(self):
         sql_books = "SELECT \
@@ -46,11 +45,11 @@ class GetDatabaseData(ConnectDatabase):
         self.cur.execute(sql_text_book)
         return self.cur.fetchall()
 
-    def _get_orig_author_names(self):
+    def get_orig_author_names(self):
         names = {}
         sql_orig_author_names = f"SELECT person.name AS person_name, person.orig_name as orig_name " \
-                            f"FROM person " \
-                            f"WHERE person.orig_name IS NOT NULL "
+                                f"FROM person " \
+                                f"WHERE person.orig_name IS NOT NULL "
         self.cur.execute(sql_orig_author_names)
         orig_author_names = self.cur.fetchall()
         for t in orig_author_names:

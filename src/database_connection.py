@@ -1,17 +1,15 @@
 from src.select_dir_location import GetDirectory
 import sqlite3
-import sys
 import os
 
 
 # Connect to SQLiteDB
-class ConnectDatabase(GetDirectory):
+class ConnectDatabase:
 
-    def get_directory(self):
-        return GetDirectory.get_directory(self)
-
-    def connect_db(self):
-        db_path = os.path.join(self.get_directory(), "chitanka-content/chitanka.db")
+    @staticmethod
+    def connect_db():
+        gd = GetDirectory()
+        db_path = os.path.join(gd.get_directory(), "chitanka-content/chitanka.db")
         try:
             con = sqlite3.connect('file:' + db_path + '?mode=ro', uri=True)
             # print("DB connected")
