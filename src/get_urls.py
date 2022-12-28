@@ -17,7 +17,6 @@ class GetContent(GetDatabaseData):
     def get_content(self):
         self.orig_author_names = self._get_orig_author_names()
 
-
         for book in self.get_books():
             series = None
             series_num = None
