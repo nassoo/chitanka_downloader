@@ -11,10 +11,14 @@ from utilities.powermanagement import long_running
 from src.download_from_server import DownloadFiles
 
 
-class SetSeries(DownloadFiles):
-    def __init__(self):
-        super().__init__(self)
-        self.series_to_insert = {}
+class SetSeries:
+    def __init__(self, output_dir, update=True, urls=None, user_series=None, book_series_ids=None):
+        self.output_dir = output_dir
+        self.update = update
+        self.urls = urls
+        self.user_series = user_series
+        self.book_series_ids = book_series_ids
+        self.entries_to_process = {}
         self.download_progress = 0
 
     ns_map = {"n": 'http://www.gribuser.ru/xml/fictionbook/2.0'}
@@ -22,7 +26,7 @@ class SetSeries(DownloadFiles):
     @long_running
     def set_series(self):
         logging.info("Setting series")
-        for book_id in self.series_to_insert.keys():
+        for book_id in self.entries_to_process.keys():
             self.download_progress += 1
             input_file = os.path.join(self.output_dir, self.urls[book_id][2] + '.fb2.zip')
             output_file = os.path.join(self.output_dir, self.urls[book_id][2] + '.xml')
@@ -33,7 +37,7 @@ class SetSeries(DownloadFiles):
                     with open(output_file, "wb") as f:
                         f.write(zf.read(zip_file))
             except Exception as e:
-                logging.exception(f'{urllib.parse.unquote(str(e))}\n{book_id}: {input_file}', exc_info=False)
+                logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
                 continue
             try:
                 doc = et.parse(output_file)
@@ -42,16 +46,16 @@ class SetSeries(DownloadFiles):
                 new_tree.write(output_file, xml_declaration=True, encoding="utf-8")
                 os.remove(input_file)
             except Exception as e:
-                logging.exception(urllib.parse.unquote(str(e)), exc_info=False)
+                logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
                 os.remove(output_file)
                 continue
             filename = ntpath.basename(output_file)  # That way it is platform independent
-            print(filename)
+            print(f'{book_id}: {filename}')
             with zipfile.ZipFile(input_file, 'w', zipfile.ZIP_DEFLATED) as zf:
                 zf.write(output_file, filename)
             os.remove(output_file)
 
-            self.user_series[book_id] = self.series_to_insert[book_id]
+            self.user_series[book_id] = self.entries_to_process[book_id]
 
         self.save_series()
         logging.info("Series set")
@@ -79,7 +83,7 @@ class SetSeries(DownloadFiles):
     def get_new_series(self):
         if self.update:
             self.user_series = json.load(open('user_data/user_series.json', 'r', encoding='utf-8'))
-            self.series_to_insert = {k: v for k, v in self.book_series_ids.items()
-                                     if k not in self.user_series.keys()}
+            self.entries_to_process = {k: v for k, v in self.book_series_ids.items()
+                                       if k not in self.user_series.keys()}
         else:
-            self.series_to_insert = self.book_series_ids
+            self.entries_to_process = self.book_series_ids

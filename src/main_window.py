@@ -40,6 +40,8 @@ class UserInterface:
         self.t = Thread()
 
         self.df = DownloadFiles(output_dir=self.output_dir, file_type=self.file_type)
+        self.gc = GetContent(filenames=self.filenames)
+        self.ss = SetSeries(output_dir=self.output_dir)
 
     def run_main_window(self):
 
@@ -164,7 +166,11 @@ class UserInterface:
 
     def end_program(self):
         # TODO: save series too (check which process is running)
-        self.df.save_urls()
+        if self.t.is_alive():
+            if self.t.name == 'download':
+                self.df.save_urls()
+            elif self.t.name == 'set_series':
+                self.ss.save_series()
         self.window.destroy()
         exit()
 
@@ -215,13 +221,14 @@ class UserInterface:
             self.error_message.place(anchor=tk.CENTER, relx=0.5, rely=0.7)
         else:
             self.clear_screen()
-            gc = GetContent(filenames=self.filenames, cur=cur)
-            gc.get_content()
+            self.gc.filenames = self.filenames
+            self.gc.cur = cur
+            self.gc.get_content()
             self.df.update = update
-            self.df.urls = gc.urls
+            self.df.urls = self.gc.urls
             self.df.get_new_urls()
 
-            self.t = Thread(target=self.df.download)
+            self.t = Thread(target=self.df.download, name='download')
             self.t.daemon = True
             self.t.start()
 
@@ -231,7 +238,7 @@ class UserInterface:
             self.progress_bar(self.df)
 
     def progress_bar(self, process):
-        all_files = len(process.urls_to_download)
+        all_files = len(process.entries_to_process)
         progress_label = tk.Label(self.window,
                                   textvariable=self.progress_label_text,
                                   bg="black",
@@ -258,7 +265,6 @@ class UserInterface:
         p.place(anchor=tk.CENTER, relx=0.5, rely=0.3)
 
         def update_progress_bar():
-            # FIXME: progress bar is not updating
             if self.t.is_alive():
                 if all_files > 0:
                     progress_value.set(str(round(process.download_progress / all_files * 100, 2)))
@@ -298,16 +304,20 @@ class UserInterface:
 
     def insert_series(self):
         self.clear_screen()
-        ss = SetSeries()
-        ss.get_new_series()
-        ss.download_progress = 0
+        self.ss.output_dir = self.output_dir
+        self.ss.update = self.df.update
+        self.ss.urls = self.df.urls
+        self.ss.user_series = self.df.user_series
+        self.ss.book_series_ids = self.gc.book_series_ids
+        self.ss.get_new_series()
+        self.ss.download_progress = 0
 
         # TODO: add an option insert all series or update only the missing ones
-        self.t = Thread(target=ss.set_series)
+        self.t = Thread(target=self.ss.set_series, name='set_series')
         self.t.daemon = True
         self.t.start()
 
         self.progress_label_text.set("Поредиците се вмъкват във файловете, в които е необходимо.\n"
                                      "Процесът е бавен - моля, изчакайте!")
         self.process_finished_text.set(f"Процесът приключи! Можете да затворите програмата.")
-        self.progress_bar(ss)
+        self.progress_bar(self.ss)

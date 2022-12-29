@@ -1,23 +1,24 @@
 from utilities.convert_filenames import convert_cyr_to_lat
 from src.get_sql_data import GetDatabaseData
 from src.resolve_authors import ResolveAuthors
-from src.series_resolve import ResolveSeries
+from src.resolve_series import ResolveSeries
 
 
-class GetContent(GetDatabaseData):
+class GetContent:
 
-    def __init__(self, filenames, cur):
-        super().__init__(cur)
+    def __init__(self, filenames, cur=None):
         self.filenames = filenames
+        self.cur = cur
         self.book_series_ids = {}
         self.__chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
         self.urls = {}
         self.orig_author_names = {}
 
     def get_content(self):
-        self.orig_author_names = self.get_orig_author_names()
+        db_data = GetDatabaseData(self.cur)
+        self.orig_author_names = db_data.get_orig_author_names()
 
-        for book in self.get_books():
+        for book in db_data.get_books():
             series = None
             series_num = None
             book_id, slug, book_authors, book_title, \
@@ -61,7 +62,7 @@ class GetContent(GetDatabaseData):
                 curr_book_path = convert_cyr_to_lat(curr_book_path)
             self.urls['book/' + str(book_id)] = [lang, slug, curr_book_path, date]
 
-        for text in self.get_texts():
+        for text in db_data.get_texts():
             text_id, slug, text_authors, text_title, text_subtitle, ser_name, ser_num, date, lang = text
             curr_text_path = self.curr_path(lang)
             if self.filenames == 'латиница' and text_authors and text_authors != '':
