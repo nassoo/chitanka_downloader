@@ -8,29 +8,25 @@ import logging
 import urllib.parse
 
 from utilities.powermanagement import long_running
-from src.download_from_server import DownloadFiles
 
 
 class SetSeries:
-    def __init__(self, output_dir, update=True, urls=None, user_series=None, book_series_ids=None):
-        self.output_dir = output_dir
-        self.update = update
-        self.urls = urls
-        self.user_series = user_series
-        self.book_series_ids = book_series_ids
-        self.entries_to_process = {}
-        self.download_progress = 0
+    def __init__(self, controller):
+        self.controller = controller
+        self.controller.app_data['download_progress'] = 0
+        self.get_new_series()
 
     ns_map = {"n": 'http://www.gribuser.ru/xml/fictionbook/2.0'}
 
     @long_running
     def set_series(self):
         logging.info("Setting series")
-        for book_id in self.entries_to_process.keys():
-            self.download_progress += 1
-            input_file = os.path.join(self.output_dir, self.urls[book_id][2] + '.fb2.zip')
-            output_file = os.path.join(self.output_dir, self.urls[book_id][2] + '.xml')
-            # print(input_file)
+        for book_id in self.controller.app_data['entries_to_process']:
+            self.controller.app_data['download_progress'] += 1
+            input_file = os.path.join(self.controller.app_data['output_dir'],
+                                      self.controller.app_data['urls'][book_id][2] + '.fb2.zip')
+            output_file = os.path.join(self.controller.app_data['output_dir'],
+                                       self.controller.app_data['urls'][book_id][2] + '.xml')
             try:
                 with zipfile.ZipFile(input_file, 'r') as zf:
                     zip_file = zf.namelist()[0]
@@ -55,7 +51,7 @@ class SetSeries:
                 zf.write(output_file, filename)
             os.remove(output_file)
 
-            self.user_series[book_id] = self.entries_to_process[book_id]
+            self.controller.app_data['user_series'][book_id] = self.controller.app_data['entries_to_process'][book_id]
 
         self.save_series()
         logging.info("Series set")
@@ -71,19 +67,23 @@ class SetSeries:
         sequence = title_info.find("n:sequence", namespaces=SetSeries.ns_map)
         if sequence is None:
             title_info.append(et.Element("sequence",
-                                         name=self.book_series_ids[book_id][0],
-                                         number=self.book_series_ids[book_id][1]
-                                         if self.book_series_ids[book_id][1] else ''))
+                                         name=self.controller.app_data['book_series_ids'][book_id][0],
+                                         number=self.controller.app_data['book_series_ids'][book_id][1]
+                                         if self.controller.app_data['book_series_ids'][book_id][1] else ''))
         return new_root_tree
 
     def save_series(self):
         with open("./user_data/user_series.json", "w", encoding='utf-8') as f:
-            json.dump(self.user_series, f, ensure_ascii=False, indent=4)
+            json.dump(self.controller.app_data['user_series'], f, ensure_ascii=False, indent=4)
 
     def get_new_series(self):
-        if self.update:
-            self.user_series = json.load(open('user_data/user_series.json', 'r', encoding='utf-8'))
-            self.entries_to_process = {k: v for k, v in self.book_series_ids.items()
-                                       if k not in self.user_series.keys()}
+        if self.controller.app_data['update']:
+            self.controller.app_data['user_series'] = json.load(
+                open('user_data/user_series.json', 'r', encoding='utf-8'))
+            self.controller.app_data['entries_to_process'] = [k for k, v
+                                                              in self.controller.app_data['book_series_ids'].items()
+                                                              if
+                                                              k not in self.controller.app_data['user_series'].keys()]
         else:
-            self.entries_to_process = self.book_series_ids
+            self.controller.app_data['entries_to_process'] = [k for k
+                                                              in self.controller.app_data['book_series_ids'].keys()]
