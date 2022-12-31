@@ -1,11 +1,13 @@
 import os
 import tkinter as tk
 from tkinter import ttk
+from threading import Thread
 from idlelib.tooltip import Hovertip
 
+from src.download_from_server import DownloadFiles
+from src.get_urls import GetContent
 from src.page import Page
 from src.select_dir_location import GetDirectory
-from src.download_process import DownloadProcess
 
 
 class ParamsPage(Page):
@@ -67,12 +69,12 @@ class ParamsPage(Page):
         download_btn = tk.Button(self.main_frame, text="Изтегли всичко", width=14,
                                  command=lambda: self.download_content(False))
         download_btn.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-        download_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.75)
+        download_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.7)
 
         update_btn = tk.Button(self.main_frame, text="Само обнови", width=14,
                                command=lambda: self.download_content(True))
         update_btn.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-        update_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.85)
+        update_btn.place(anchor=tk.CENTER, relx=0.5, rely=0.82)
 
     def select_files_dir(self):
         gd = GetDirectory()
@@ -115,4 +117,32 @@ class ParamsPage(Page):
 
     def download_content(self, update):
         self.controller.app_data['update'] = update
-        self.controller.show_frame(DownloadProcess)
+
+        if self.controller.app_data['output_dir'] is None:
+            error_message = tk.Label(self.main_frame,
+                                     text="Не сте избрали папка за изтегляне!",
+                                     bg="black",
+                                     fg="red",
+                                     font="none 12 bold",
+                                     name="error_message")
+            error_message.grid(row=5, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
+            error_message.place(anchor=tk.CENTER, relx=0.5, rely=0.7)
+        else:
+            # TODO: check if error_message exists and destroy it
+            gc = GetContent(self.controller.app_data)
+            gc.get_content()
+            df = DownloadFiles(self.controller.app_data)
+
+            self.controller.t = Thread(target=df.download, name='download')
+            self.controller.t.daemon = True
+            self.controller.t.start()
+
+            self.controller.app_data['progress_label_text'].set(
+                "Файловете се изтеглят. Процесът е бавен - моля, изчакайте!"
+                if not self.controller.app_data['update']
+                else "Файловете се обновяват. Процесът е бавен - моля, изчакайте!"
+                if len(self.controller.app_data['entries_to_process']) > 1000
+                else "Файловете се обновяват. Моля, изчакайте!")
+            # TODO: add description of the process
+            self.controller.app_data['process_finished_text'].set(f"Изтеглянето приключи!")
+            self.controller.show_frame('ProgressPage')
