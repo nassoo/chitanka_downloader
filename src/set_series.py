@@ -13,7 +13,7 @@ from utilities.powermanagement import long_running
 class SetSeries:
     def __init__(self, controller):
         self.controller = controller
-        self.controller.app_data['download_progress'] = 0
+        self.controller.app_data['current_progress'] = 0
         self.get_new_series()
 
     ns_map = {"n": 'http://www.gribuser.ru/xml/fictionbook/2.0'}
@@ -22,14 +22,16 @@ class SetSeries:
     def set_series(self):
         logging.info("Setting series")
         for book_id in self.controller.app_data['entries_to_process']:
-            self.controller.app_data['download_progress'] += 1
+            self.controller.app_data['current_progress'] += 1
             input_file = os.path.join(self.controller.app_data['output_dir'],
                                       self.controller.app_data['urls'][book_id][2] + '.fb2.zip')
-            output_file = os.path.join(self.controller.app_data['output_dir'],
-                                       self.controller.app_data['urls'][book_id][2] + '.xml')
+            dir_path = ntpath.dirname(ntpath.abspath(input_file))  # That way it is platform independent
+            output_file = ''
+            zip_file = ''
             try:
                 with zipfile.ZipFile(input_file, 'r') as zf:
-                    zip_file = zf.namelist()[0]
+                    zip_file += zf.namelist()[0]
+                    output_file += os.path.join(dir_path, zip_file)
                     with open(output_file, "wb") as f:
                         f.write(zf.read(zip_file))
             except Exception as e:
@@ -45,13 +47,12 @@ class SetSeries:
                 logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
                 os.remove(output_file)
                 continue
-            filename = ntpath.basename(output_file)  # That way it is platform independent
-            print(f'{book_id}: {filename}')
+            print(f'{book_id}: {input_file}')
             with zipfile.ZipFile(input_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.write(output_file, filename)
+                zf.write(output_file, zip_file)
             os.remove(output_file)
 
-            self.controller.app_data['user_series'][book_id] = self.controller.app_data['entries_to_process'][book_id]
+            self.controller.app_data['user_series'][book_id] = self.controller.app_data['book_series_ids'][book_id]
 
         self.save_series()
         logging.info("Series set")
