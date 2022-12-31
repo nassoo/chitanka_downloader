@@ -12,7 +12,7 @@ IP = 'http://127.0.0.1:8000/'
 class DownloadFiles:
     def __init__(self, app_data):
         self.app_data = app_data
-        self.app_data['download_progress'] = 0
+        self.app_data['current_progress'] = 0
         self.app_data['user_urls'] = json.load(open('user_data/user_files.json', 'r', encoding='utf-8'))
         self.app_data['user_series'] = json.load(open('user_data/user_series.json', 'r', encoding='utf-8'))
         self.get_new_urls()
@@ -24,7 +24,7 @@ class DownloadFiles:
         logging.info('Starting download')
         for key in self.app_data['entries_to_process']:
             try:
-                self.app_data['download_progress'] += 1
+                self.app_data['current_progress'] += 1
                 short_name, path = self.app_data['urls'][key][1:3]
                 url = IP + key + '-' + short_name + self.app_data['file_type']
                 dir_name = os.path.join(self.app_data['output_dir'], '/'.join(path.split('/')[:-1]))
