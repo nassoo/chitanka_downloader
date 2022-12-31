@@ -2,10 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 
 from src.page import Page
-from src.set_series import SetSeries
 
 
-class ProgressBar(Page):
+class ProgressPage(Page):
     def __init__(self, parent, controller):
         super().__init__(parent, controller)
 
@@ -46,16 +45,15 @@ class ProgressBar(Page):
                 p["value"] = progress_value.get()
                 p.destroy()
                 progress_label.destroy()
-                process_finished = tk.Label(self.main_frame,
+                process_finished = tk.Label(self.upper_frame,
                                             textvariable=controller.app_data['process_finished_text'],
                                             bg="black",
                                             fg="green",
                                             font="none 12 bold",
                                             name="process_finished")
-                process_finished.grid(row=5, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-                process_finished.place(anchor=tk.CENTER, relx=0.5, rely=0.4)
-                if controller.app_data['file_type'] == ".fb2.zip" \
-                        and controller.app_data['process_finished_text'].get() == "Изтеглянето приключи!":
-                    controller.show_frame(SetSeries)
+                process_finished.pack(padx=10, pady=10)
+
+                if controller.app_data['file_type'] == ".fb2.zip" and controller.t.name == "download":
+                    controller.show_frame('SeriesPage')
 
         update_progress_bar()
