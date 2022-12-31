@@ -3,7 +3,6 @@ import webbrowser
 from functools import partial
 
 from src.database_connection import ConnectDatabase
-from src.params_page import ParamsPage
 from utilities.tkHyperlinkManager import HyperlinkManager
 
 from src.page import Page
@@ -43,6 +42,6 @@ class DatabasePage(Page):
         cur, database_message = db.connect_db()
         if cur is not None:
             self.controller.app_data['cur'] = cur
-            self.controller.show_frame(ParamsPage)
+            self.controller.show_frame('ParamsPage')
         else:
             self.controller.app_data['db_output_text'].set(database_message)
