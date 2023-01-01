@@ -1,5 +1,6 @@
 import tkinter as tk
 import webbrowser
+import requests
 from functools import partial
 
 from src.database_connection import ConnectDatabase
@@ -42,6 +43,11 @@ class DatabasePage(Page):
         cur, database_message = db.connect_db()
         if cur is not None:
             self.controller.app_data['cur'] = cur
-            self.controller.show_frame('ParamsPage')
+            try:
+                requests.head('http://127.0.0.1:8000/')
+                self.controller.show_frame('ParamsPage')
+            except Exception:
+                self.controller.app_data['db_output_text'].set('Няма връзка с преносимата версия на "Моята библиотека".'
+                                                               '\nСтартирайте я и опитайте отново.')
         else:
             self.controller.app_data['db_output_text'].set(database_message)
