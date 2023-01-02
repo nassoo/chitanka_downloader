@@ -1,3 +1,4 @@
+import os
 import tkinter as tk
 from threading import Thread
 
@@ -12,7 +13,10 @@ class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         self.wm_title("Chitanka Downloader")
-        self.iconbitmap(resource_path("img/logo.ico"))
+        if os.name == "nt":
+            self.iconbitmap(resource_path("img/logo.ico"))
+        else:
+            self.iconbitmap(resource_path("@img/logo.xbm"))
         self.geometry("600x400")
         self.configure(bg='black')
         self.t = Thread()
