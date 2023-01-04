@@ -1,7 +1,7 @@
 # chitanka-downloader
 
 Програмата е създадена с цел да бъдат изтегляни и обновявани архиви на "[Моята библиотека](https://chitanka.info/)". За момента е налична версия само за Windows.  
-За да я използвате, изтеглете файла **[ChitankaDownloader-windows.zip](https://github.com/Nassoo/chitanka_downloader/releases/latest/download/ChitankaDownloader-windows.zip)** и го разархивирайте в папка по Ваш избор (не е необходима инсталация - може да я използвате и от USB памет).
+За да я използвате, изтеглете файла **[ChitankaDownloader-windows.zip](https://github.com/Nassoo/chitanka_downloader/releases/download/v0.2.2-alpha/ChitankaDownloader-windows.zip)** и го разархивирайте в папка по Ваш избор (не е необходима инсталация - може да я използвате и от USB памет).
 В папката ще се създаде подпапката user_data, в която се съхранява необходимата информация, за да е възможно обновяването на архива. Не изтривайте и не променяйте съдържанието &#x45d; - в противен случай обновяването може да не работи, както се очаква.
 Освен нея, ще откриете и файл ChitankaDownloader.exe - стартирайте го и следвайте инструкциите на екрана.
 
