@@ -53,8 +53,11 @@ class DownloadFiles:
                 # TODO: Move it to get_new_urls(), so it can't delete accidentally duplicated files?
                 if self.app_data['update'] and key in self.app_data['user_urls'] \
                         and self.app_data['user_urls'][key][2] != self.app_data['urls'][key][2]:
-                    os.remove(os.path.join(self.app_data['output_dir'],
-                                           self.app_data['user_urls'][key][2] + self.app_data['file_type']))
+                    old_file = os.path.join(self.app_data['output_dir'],
+                                            self.app_data['user_urls'][key][2] + self.app_data['file_type'])
+                    old_dir = os.path.dirname(old_file)
+                    os.remove(old_file)
+                    self.remove_empty_dirs(old_dir)
 
                 self.app_data['user_urls'][key] = self.app_data['urls'][key]
                 self.app_data['user_series'].pop(key, None)
@@ -80,3 +83,8 @@ class DownloadFiles:
                                                    or self.app_data['user_urls'][k][2] != v[2]]
         else:
             self.app_data['entries_to_process'] = [k for k in self.app_data['urls'].keys()]
+
+    def remove_empty_dirs(self, dir_name):
+        if not os.listdir(dir_name):
+            os.rmdir(dir_name)
+            self.remove_empty_dirs(os.path.dirname(dir_name))

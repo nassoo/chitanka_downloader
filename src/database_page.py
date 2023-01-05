@@ -14,6 +14,7 @@ class DatabasePage(Page):
         super().__init__(parent, controller)
         self.controller = controller
 
+        # TODO: fix height of the frame for linux (it's too small - remove it?)
         intro_text = tk.Text(self.main_frame, bg="black", fg="white", height=5, border=0, font=12, wrap=tk.WORD)
         intro_text.tag_configure("center", justify='center')
         intro_text.insert(tk.END, "Преди да започне обработката, е необходимо да сте изтеглили и стартирали ")

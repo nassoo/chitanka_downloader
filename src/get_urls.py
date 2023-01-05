@@ -57,6 +57,8 @@ class GetContent:
             date = int(date.replace(' ', '').replace(':', '').replace('-', ''))
             if self.app_data['filenames'] == 'латиница':
                 curr_book_path = convert_cyr_to_lat(curr_book_path)
+            if len(curr_book_path) > 200:
+                curr_book_path = curr_book_path[:200].strip() + '…'
             self.app_data['urls']['book/' + str(book_id)] = [lang, slug, curr_book_path, date]
 
         for text in db.get_texts():
@@ -89,6 +91,8 @@ class GetContent:
             date = date.replace(' ', '').replace(':', '').replace('-', '')
             if self.app_data['filenames'] == 'латиница':
                 curr_text_path = convert_cyr_to_lat(curr_text_path)
+            if len(curr_text_path) > 200:
+                curr_text_path = curr_text_path[:200].strip() + '…'
             self.app_data['urls']['text/' + str(text_id)] = [lang, slug, curr_text_path, date]
 
     def curr_path(self, lang):

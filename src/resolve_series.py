@@ -14,7 +14,9 @@ class ResolveSeries:
         series_name = ''
         for i, el in enumerate(author_ser):
             series_name = el[1]
-            if i > 1 and not author_ser[i - 1][1] == series_name:
+            if i > 0 and not author_ser[i - 1][1] == series_name:
+                return [None, None]
+            if series_name == 'NULL':
                 return [None, None]
 
         return [series_name, self.series_num]
