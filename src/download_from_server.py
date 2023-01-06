@@ -1,8 +1,9 @@
 import os
-
-import requests
 import json
 import logging
+import zipfile
+import requests
+from requests.exceptions import HTTPError
 
 from utilities.powermanagement import long_running
 
@@ -34,17 +35,20 @@ class DownloadFiles:
                 try:
                     head = requests.head(url).headers['Location']
                     r = requests.get(IP + head)
-                except KeyError as e:
+                    r.raise_for_status()
+                except (KeyError, HTTPError) as e:
                     try:
                         ext = '.sfb.zip'
                         head = requests.head(IP + key + '-' + short_name + ext).headers['location']
                         head = head.replace(ext, self.app_data['file_type'])
                         r = requests.get(IP + head)
+                        r.raise_for_status()
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form localhost with link to .sfb.zip]',
                                           exc_info=False)
-                    except KeyError as e:
+                    except (KeyError, HTTPError) as e:
                         url = 'https://chitanka.info/' + key + '-' + short_name + self.app_data['file_type']
                         r = requests.get(url)
+                        r.raise_for_status()
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form chitanka.info]', exc_info=False)
 
                 with open(os.path.join(dir_name, file_name), 'wb') as f:
@@ -56,14 +60,17 @@ class DownloadFiles:
                     old_file = os.path.join(self.app_data['output_dir'],
                                             self.app_data['user_urls'][key][2] + self.app_data['file_type'])
                     old_dir = os.path.dirname(old_file)
-                    os.remove(old_file)
-                    self.remove_empty_dirs(old_dir)
+                    if os.path.exists(old_file):
+                        os.remove(old_file)
+                        self.remove_empty_dirs(old_dir)
 
                 self.app_data['user_urls'][key] = self.app_data['urls'][key]
                 self.app_data['user_series'].pop(key, None)
 
             except Exception as e:
                 logging.exception(f'{e} \n    {key} [FAIL]')
+                self.app_data['user_urls'].pop(key, None)
+                self.app_data['user_series'].pop(key, None)
 
         # TODO: add an option to save the progress after each iteration
         self.save_urls()
@@ -81,6 +88,18 @@ class DownloadFiles:
                                                    if k not in self.app_data['user_urls'].keys()
                                                    or self.app_data['user_urls'][k][3] < v[3]
                                                    or self.app_data['user_urls'][k][2] != v[2]]
+            if self.app_data['check_files'] and self.app_data['file_type'] == '.fb2.zip':
+                for key, value in self.app_data['user_urls'].items():
+                    file_to_check = os.path.join(self.app_data['output_dir'], value[2] + '.fb2.zip')
+                    try:
+                        with zipfile.ZipFile(file_to_check, 'r') as zf:
+                            zip_file = zf.namelist()[0]
+                            if not zip_file.endswith('.fb2'):
+                                self.app_data['entries_to_process'].append(key)
+                                logging.exception(f'File will be replaced: {key}: {file_to_check}', exc_info=False)
+                    except Exception as e:
+                        self.app_data['entries_to_process'].append(key)
+                        logging.exception(f'{e} \n    File will be replaced: {key}: {file_to_check}', exc_info=False)
         else:
             self.app_data['entries_to_process'] = [k for k in self.app_data['urls'].keys()]
 

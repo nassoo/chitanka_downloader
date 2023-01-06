@@ -48,6 +48,7 @@ class GetContent:
                 full_title += ' [' + book_subtitle + ']'
             if book_title_extra:
                 full_title += ' [' + book_title_extra + ']'
+            full_title = full_title.replace('/', '_')
             if len(full_title) > 97:
                 curr_book_path += full_title[:97]
             else:
@@ -82,6 +83,7 @@ class GetContent:
             full_title = text_title
             if text_subtitle:
                 full_title += ' [' + text_subtitle + ']'
+            full_title = full_title.replace('/', '_')
             if len(full_title) > 97:
                 curr_text_path += full_title[:97] + '…'
             else:
@@ -94,6 +96,16 @@ class GetContent:
             if len(curr_text_path) > 200:
                 curr_text_path = curr_text_path[:200].strip() + '…'
             self.app_data['urls']['text/' + str(text_id)] = [lang, slug, curr_text_path, date]
+
+        # check for duplicates
+        rev_urls = {}
+        for k, v in self.app_data['urls'].items():
+            rev_urls.setdefault(v[2], list()).append(k)
+        duplicates = [(k, sorted(v, key=lambda x: (x.split('/')[0], int(x.split('/')[1]))))
+                      for k, v in rev_urls.items() if len(v) > 1]
+        for entry in duplicates:
+            for i, key in enumerate(entry[1]):
+                self.app_data['urls'][key][2] += f' (v{i + 1})'
 
     def curr_path(self, lang):
         curr_path = ''

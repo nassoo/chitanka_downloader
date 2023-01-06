@@ -21,9 +21,11 @@ class App(tk.Tk):
         self.configure(bg='black')
         self.t = Thread()
         self.app_data = {
-            "cur": None,
+            'version': "1.1.0",
+            'cur': None,
             "filenames": 'кирилица',
             'file_type': '.fb2.zip',
+            'check_files': False,
             'output_dir': '../Читанка',
             'update': True,
             'urls': {},

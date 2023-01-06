@@ -12,7 +12,7 @@ class Page(tk.Frame):
         self.logo = tk.PhotoImage(file=resource_path("img/logo.png"))
 
         label_logo = tk.Label(self, image=self.logo, bg='black')
-        label_logo.pack(padx=10, pady=5)
+        label_logo.pack(padx=10, pady=(5, 0))
 
         self.upper_frame = tk.Frame(self, bg='black')
         self.upper_frame.pack(padx=10)
