@@ -24,33 +24,40 @@ class SetSeries:
         for book_id in self.controller.app_data['entries_to_process']:
             self.controller.app_data['current_progress'] += 1
             input_file = os.path.join(self.controller.app_data['output_dir'],
-                                      self.controller.app_data['urls'][book_id][2] + '.fb2.zip')
+                                      self.controller.app_data['urls'][book_id][2] +
+                                      self.controller.app_data['file_type'])
             dir_path = ntpath.dirname(ntpath.abspath(input_file))  # That way it is platform independent
-            output_file = ''
-            zip_file = ''
+            temp_file = ''
+            zip_file_name = ''
+            if self.controller.app_data['file_type'] == '.fb2.zip':
+                try:
+                    with zipfile.ZipFile(input_file, 'r') as zf:
+                        zip_file_name += zf.namelist()[0]
+                        temp_file += os.path.join(dir_path, 'temp.fb2')
+                        with open(temp_file, "wb") as f:
+                            f.write(zf.read(zip_file_name))
+                except Exception as e:
+                    logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
+                    continue
+            else:
+                temp_file = input_file
             try:
-                with zipfile.ZipFile(input_file, 'r') as zf:
-                    zip_file += zf.namelist()[0]
-                    output_file += os.path.join(dir_path, zip_file)
-                    with open(output_file, "wb") as f:
-                        f.write(zf.read(zip_file))
-            except Exception as e:
-                logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
-                continue
-            try:
-                doc = et.parse(output_file)
+                doc = et.parse(temp_file)
                 root = doc.getroot()
                 new_tree = self.transform(root)
-                new_tree.write(output_file, xml_declaration=True, encoding="utf-8")
-                os.remove(input_file)
+                new_tree.write(temp_file, xml_declaration=True, encoding="utf-8")
+                if self.controller.app_data['file_type'] == '.fb2.zip':
+                    os.remove(input_file)
             except Exception as e:
                 logging.exception(f'{urllib.parse.unquote(str(e))}\n    {book_id}: {input_file}', exc_info=False)
-                os.remove(output_file)
+                if self.controller.app_data['file_type'] == '.fb2.zip':
+                    os.remove(temp_file)
                 continue
             print(f'{book_id}: {input_file}')
-            with zipfile.ZipFile(input_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.write(output_file, zip_file)
-            os.remove(output_file)
+            if self.controller.app_data['file_type'] == '.fb2.zip':
+                with zipfile.ZipFile(input_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(temp_file, zip_file_name)
+                os.remove(temp_file)
 
             self.controller.app_data['user_series'][book_id] = self.controller.app_data['book_series_ids'][book_id]
 

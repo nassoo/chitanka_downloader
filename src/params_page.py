@@ -47,7 +47,7 @@ class ParamsPage(Page):
         frame_params.bind('<Configure>', lambda e: files_dir_output.config(
             wraplength=self.controller.winfo_width() - 150))
 
-        file_types = [".fb2.zip", ".epub"]
+        file_types = [".fb2.zip", ".fb2", ".epub"]
         ft = ttk.OptionMenu(frame_params, self.file_types_option_var, file_types[0], *file_types,
                             command=self.set_file_type)
         ft.config(width=12)
@@ -107,7 +107,8 @@ class ParamsPage(Page):
         self.controller.app_data['file_type'] = value
         self.file_type_output_text.set(f"Избраният файлов формат е {value}.")
         frame_params = self.main_frame.nametowidget('frame_params')
-        if value == ".fb2.zip":
+        if value == ".fb2.zip" or value == ".fb2":
+            #  TODO check if exists
             self.ft_warning.destroy()
             self.ft_warning_btn.destroy()
         elif self.ft_warning not in frame_params.winfo_children():

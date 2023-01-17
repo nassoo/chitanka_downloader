@@ -23,13 +23,14 @@ class DownloadFiles:
         logging.getLogger("requests").setLevel(logging.WARNING)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
         logging.info('Starting download')
+        file_type = '.fb2.zip' if self.app_data['file_type'] == '.fb2' else self.app_data['file_type']
         for key in self.app_data['entries_to_process']:
             try:
                 self.app_data['current_progress'] += 1
                 short_name, path = self.app_data['urls'][key][1:3]
-                url = IP + key + '-' + short_name + self.app_data['file_type']
+                url = IP + key + '-' + short_name + file_type
                 dir_name = os.path.join(self.app_data['output_dir'], '/'.join(path.split('/')[:-1]))
-                file_name = path.split('/')[-1] + self.app_data['file_type']
+                file_name = path.split('/')[-1] + file_type
                 if not os.path.exists(dir_name):
                     os.makedirs(dir_name)
                 try:
@@ -40,19 +41,30 @@ class DownloadFiles:
                     try:
                         ext = '.sfb.zip'
                         head = requests.head(IP + key + '-' + short_name + ext).headers['location']
-                        head = head.replace(ext, self.app_data['file_type'])
+                        head = head.replace(ext, file_type)
                         r = requests.get(IP + head)
                         r.raise_for_status()
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form localhost with link to .sfb.zip]',
                                           exc_info=False)
                     except (KeyError, HTTPError) as e:
-                        url = 'https://chitanka.info/' + key + '-' + short_name + self.app_data['file_type']
+                        url = 'https://chitanka.info/' + key + '-' + short_name + file_type
                         r = requests.get(url)
                         r.raise_for_status()
                         logging.exception(f'{e}\n    {key}: {url} [SUCCESS form chitanka.info]', exc_info=False)
 
                 with open(os.path.join(dir_name, file_name), 'wb') as f:
                     f.write(r.content)
+
+                if self.app_data['file_type'] == '.fb2':
+                    try:
+                        with zipfile.ZipFile(os.path.join(dir_name, file_name), 'r') as zf:
+                            zip_file = zf.namelist()[0]
+                            new_file = os.path.join(dir_name, path.split('/')[-1] + '.fb2')
+                            with open(new_file, "wb") as f:
+                                f.write(zf.read(zip_file))
+                        os.remove(os.path.join(dir_name, file_name))
+                    except Exception as e:
+                        logging.exception(f'{e} \n    {key}: {url}', exc_info=False)
 
                 # TODO: Move it to get_new_urls(), so it can't delete accidentally duplicated files?
                 if self.app_data['update'] and key in self.app_data['user_urls'] \

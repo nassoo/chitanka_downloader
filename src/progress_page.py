@@ -53,7 +53,8 @@ class ProgressPage(Page):
                                             name="process_finished")
                 process_finished.pack(padx=10, pady=10)
 
-                if controller.app_data['file_type'] == ".fb2.zip" and controller.t.name == "download":
+                if (controller.app_data['file_type'] == ".fb2.zip" or controller.app_data['file_type'] == ".fb2") \
+                        and controller.t.name == "download":
                     controller.show_frame('SeriesPage')
 
         update_progress_bar()
