@@ -5,6 +5,7 @@ from functools import partial
 
 from src.database_connection import ConnectDatabase
 from utilities.tkHyperlinkManager import HyperlinkManager
+from packaging import version
 
 from src.page import Page
 
@@ -77,7 +78,7 @@ class DatabasePage(Page):
             r = requests.get('https://api.github.com/repos/Nassoo/chitanka_downloader/releases/latest')
             self.new_version = r.json()['html_url']
             latest_version = self.new_version.split('/')[-1][1:]
-            if latest_version != self.controller.app_data['version']:
+            if version.parse(latest_version) > version.parse(self.controller.app_data['version']):
                 self.new_version_text.set(f'Налична е нова версия на програмата. Натиснете тук за да я изтеглите.')
                 self.new_version_description_text.set('Заместете само изпълнимия файл. '
                                                       'Не презаписвайте папката user_data!')

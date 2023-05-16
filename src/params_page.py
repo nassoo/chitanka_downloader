@@ -169,5 +169,6 @@ class ParamsPage(Page):
                 if len(self.controller.app_data['entries_to_process']) > 1000
                 else "Файловете се обновяват. Моля, изчакайте!")
             # TODO: add description of the process
-            self.controller.app_data['process_finished_text'].set(f"Изтеглянето приключи!")
+            # self.controller.app_data[f'process_finished_text'].set(
+            #     f"Изтеглянето приключи за {timedelta(seconds=t_elapsed)}!")
             self.controller.show_frame('ProgressPage')

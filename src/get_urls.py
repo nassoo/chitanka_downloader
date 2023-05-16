@@ -8,7 +8,30 @@ class GetContent:
 
     def __init__(self, app_data):
         self.app_data = app_data
-        self.__chars_to_replace = {'&': 'и', '%': '_', ':': '_', '>': '_', '!': '_', '?': '_', '\\n': ' ', '//': 'II'}
+        self.__chars_to_replace = {'&': 'и',
+                                   '%': '_',
+                                   ':': '_',
+                                   '>': '_',
+                                   '!': '_',
+                                   '?': '_',
+                                   '\\n': ' ',
+                                   '//': 'II',
+                                   # '½': '_1_2',
+                                   # '¾': '_3_4',
+                                   # 'ʞ': 'k',
+                                   # '²': '^2',
+                                   # '⁻': '-',
+                                   # '⁹': '9',
+                                   # 'ä': 'a',
+                                   # 'é': 'e',
+                                   # 'ѫ': 'ъ',
+                                   # 'Ѫ': 'Ъ',
+                                   # 'ѣ': 'я',
+                                   # '∞': 'inf',
+                                   # '×': 'x',
+                                   # 'ţ': 't',
+                                   # '⇔': '=='
+                                   }
         self.orig_author_names = {}
 
     def get_content(self):
@@ -100,7 +123,7 @@ class GetContent:
         # check for duplicates
         rev_urls = {}
         for k, v in self.app_data['urls'].items():
-            rev_urls.setdefault(v[2], list()).append(k)
+            rev_urls.setdefault(v[2].lower(), list()).append(k)
         duplicates = [(k, sorted(v, key=lambda x: (x.split('/')[0], int(x.split('/')[1]))))
                       for k, v in rev_urls.items() if len(v) > 1]
         for entry in duplicates:

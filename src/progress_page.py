@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import time
+from datetime import timedelta
 
 from src.page import Page
 
@@ -7,6 +9,8 @@ from src.page import Page
 class ProgressPage(Page):
     def __init__(self, parent, controller):
         super().__init__(parent, controller)
+
+        t_start = time.time()  # start the timer
 
         all_files = len(controller.app_data['entries_to_process'])
         progress_value = tk.StringVar()
@@ -37,10 +41,27 @@ class ProgressPage(Page):
             if controller.t.is_alive():
                 if all_files > 0:
                     progress_value.set(str(round(controller.app_data['current_progress'] / all_files * 100, 2)))
-                s.configure("LabeledProgressbar", text=f"{progress_value.get()} %      ")
-                p["value"] = progress_value.get()
-                p.after(5000, update_progress_bar)
+                    s.configure("LabeledProgressbar", text=f"{progress_value.get()} %      ")
+                    p["value"] = progress_value.get()
+                    p.after(5000, update_progress_bar)
+                else:
+                    p.after(100, update_progress_bar)
             else:
+                if all_files > 0:
+                    t_elapsed = time.time() - t_start
+                    t = str(timedelta(seconds=t_elapsed)).split('.')[0].split(':')
+                    if controller.t.name == "download":
+                        self.controller.app_data[f'process_finished_text'].set(
+                            f"Изтеглянето приключи за {t[0]} ч. {t[1]} мин. и {t[2]} сек.")
+                    else:
+                        self.controller.app_data[f'process_finished_text'].set(
+                            f"Вмъкването на поредиците приключи за {t[0]} ч. {t[1]} мин. и {t[2]} сек.")
+                else:
+                    if controller.t.name == "download":
+                        self.controller.app_data[f'process_finished_text'].set("Няма нови файлове за изтегляне.")
+                    else:
+                        self.controller.app_data[f'process_finished_text'].set("Няма нови поредици за вмъкване.")
+
                 s.configure("LabeledProgressbar", text=f"{progress_value.get()} %      ")
                 p["value"] = progress_value.get()
                 p.destroy()
@@ -53,8 +74,7 @@ class ProgressPage(Page):
                                             name="process_finished")
                 process_finished.pack(padx=10, pady=10)
 
-                if (controller.app_data['file_type'] == ".fb2.zip" or controller.app_data['file_type'] == ".fb2") \
-                        and controller.t.name == "download":
+                if controller.app_data['file_type'].startswith('.fb2') and controller.t.name == "download":
                     controller.show_frame('SeriesPage')
 
         update_progress_bar()
